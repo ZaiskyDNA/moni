@@ -1,0 +1,17 @@
+# Dependency
+node_modules/
+
+# Environment (berisi password, jangan di-commit)
+.env
+.env.*
+
+# Log & hasil test
+npm-debug.log*
+coverage/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
