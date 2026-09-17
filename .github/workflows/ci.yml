@@ -1,0 +1,84 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Batalkan run lama di branch yang sama kalau ada push baru.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-test:
+    name: Lint & Test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout kode
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: backend/.nvmrc
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependency
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit test
+        run: npm test
+
+  docker-smoke-test:
+    name: Docker Smoke Test
+    needs: lint-test
+    runs-on: ubuntu-latest
+    env:
+      # Uji image yang sama dengan yang nanti di-deploy.
+      BACKEND_TARGET: production
+    steps:
+      - name: Checkout kode
+        uses: actions/checkout@v7
+
+      # .env tidak di-commit, jadi CI membuat .env sementara dengan nilai uji.
+      - name: Siapkan .env untuk CI
+        run: |
+          cat > .env <<'EOF'
+          POSTGRES_USER=app
+          POSTGRES_PASSWORD=cipassword
+          POSTGRES_DB=app_db
+          BACKEND_PORT=3000
+          DB_PORT=5432
+          CORS_ORIGIN=*
+          EOF
+
+      - name: Build image dan jalankan backend + database
+        run: docker compose up -d --build --wait --wait-timeout 120
+
+      - name: Cek endpoint health
+        run: |
+          curl --fail --silent --show-error http://localhost:3000/api/v1/health
+          echo
+          curl --fail --silent --show-error http://localhost:3000/api/v1/health/ready
+          echo
+
+      - name: Tampilkan log container (kalau gagal)
+        if: failure()
+        run: docker compose logs
+
+      - name: Bersihkan
+        if: always()
+        run: docker compose down -v
