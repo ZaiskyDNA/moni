@@ -6,6 +6,19 @@ export const config = {
   databaseUrl: process.env.DATABASE_URL,
   // Pisahkan beberapa origin dengan koma, misalnya: https://app.contoh.com,http://localhost:5173
   corsOrigin: process.env.CORS_ORIGIN ?? '*',
+  // Jumlah reverse proxy di depan backend (0 di lokal, biasanya 1 di hosting cloud).
+  trustProxy: Number(process.env.TRUST_PROXY || 0),
+
+  // FR-01. Pakai `||` dengan alasan yang sama seperti blok exchangeRate di bawah.
+  auth: {
+    jwtSecret: process.env.JWT_SECRET || undefined,
+    jwtRefreshSecret: process.env.JWT_REFRESH_SECRET || undefined,
+    // Dalam detik. Default: access 15 menit, refresh 7 hari.
+    accessTokenTtl: Number(process.env.ACCESS_TOKEN_TTL || 900),
+    refreshTokenTtl: Number(process.env.REFRESH_TOKEN_TTL || 604_800),
+    // Maksimal percobaan register/login per IP per 15 menit.
+    rateLimit: { windowMs: 15 * 60 * 1000, max: Number(process.env.AUTH_RATE_LIMIT_MAX || 10) },
+  },
 
   exchangeRate: {
     // Pakai `||` (bukan `??`) di seluruh field ini: docker-compose meneruskan variabel

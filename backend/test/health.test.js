@@ -40,5 +40,5 @@ test('route yang tidak ada mengembalikan 404 JSON', async () => {
   const res = await request(createApp({ db: healthyDb })).get('/api/v1/tidak-ada');
 
   assert.equal(res.status, 404);
-  assert.deepEqual(res.body, { error: 'Not Found' });
+  assert.deepEqual(res.body, { error: { code: 'NOT_FOUND', message: 'Not Found' } });
 });

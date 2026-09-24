@@ -4,6 +4,10 @@ import { createDb } from './db.js';
 import { prisma } from './prisma.js';
 import { startExchangeRateCron } from './cron.js';
 
+if (!config.auth.jwtSecret || !config.auth.jwtRefreshSecret) {
+  throw new Error('JWT_SECRET / JWT_REFRESH_SECRET belum diset. Tambahkan ke file .env (lihat .env.example).');
+}
+
 const db = createDb(config.databaseUrl);
 const app = createApp({ db, prisma, config, corsOrigin: config.corsOrigin });
 
