@@ -33,6 +33,21 @@ Backend REST API (Express.js + PostgreSQL) yang dijalankan dengan Docker. Backen
    ```
 
    Gunakan huruf dan angka saja untuk password. Kalau port 3000 atau 5432 sudah dipakai, ubah `BACKEND_PORT` / `DB_PORT` (dan port di `DATABASE_URL`).
+
+   Variabel opsional untuk modul penarikan kurs (FR-05, lihat `docs/Exchange_Rate_API_Comparison.md`) — semua punya default yang cocok untuk development, cukup diisi kalau ingin diubah:
+
+   ```env
+   # Default: https://api.frankfurter.dev/v1 (tidak butuh API key)
+   EXCHANGE_RATE_API_BASE_URL=https://api.frankfurter.dev/v1
+   # Default: IDR
+   EXCHANGE_RATE_BASE_CURRENCY=IDR
+   # Default: USD,AUD,EUR,GBP,JPY,SGD
+   EXCHANGE_RATE_TRACKED_CURRENCIES=USD,AUD,EUR,GBP,JPY,SGD
+   # Default: 59 23 * * * (setiap hari pukul 23:59)
+   EXCHANGE_RATE_CRON_SCHEDULE=59 23 * * *
+   # Wajib diisi di staging/production untuk melindungi endpoint internal cron di bawah
+   INTERNAL_CRON_SECRET=gantidengansecretacak
+   ```
 2. Jalankan backend dan database:
 
    ```bash
@@ -84,6 +99,10 @@ Untuk menambah/mengubah tabel:
 |---|---|---|
 | GET | `/api/v1/health` | Liveness: server hidup |
 | GET | `/api/v1/health/ready` | Readiness: server bisa terhubung ke database (503 kalau tidak) |
+| GET | `/api/v1/exchange-rates/latest` | Kurs terbaru per pasangan mata uang yang sudah ditarik cron job |
+| POST | `/api/v1/internal/cron/fetch-exchange-rate` | Trigger manual penarikan kurs dari Frankfurter (dipakai scheduler, bukan user — butuh header `x-internal-cron-secret` kalau `INTERNAL_CRON_SECRET` diset) |
+
+Penarikan kurs juga berjalan otomatis lewat *background worker* (`node-cron`, lihat `backend/src/cron.js`) sesuai jadwal `EXCHANGE_RATE_CRON_SCHEDULE` selama proses backend hidup — endpoint di atas untuk trigger manual/testing.
 
 ## CI
 
