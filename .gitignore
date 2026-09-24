@@ -4,6 +4,7 @@ node_modules/
 # Environment (berisi password, jangan di-commit)
 .env
 .env.*
+!.env.example
 
 # Log & hasil test
 npm-debug.log*
