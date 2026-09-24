@@ -65,6 +65,18 @@ Jalankan dari folder `backend/`.
 | `npm start` | Menjalankan server (mode production) |
 | `npm run lint` | Mengecek gaya dan potensi bug kode dengan ESLint |
 | `npm test` | Menjalankan unit test |
+| `npm run db:migrate` | Membuat & menerapkan migration baru dari `prisma/schema.prisma` (development) |
+| `npm run db:deploy` | Menerapkan migration yang sudah ada tanpa membuat yang baru (dipakai saat deploy) |
+| `npm run db:studio` | Membuka Prisma Studio (GUI) untuk lihat/edit data |
+
+### Database schema (Prisma)
+
+Skema database (sesuai ERD pada `docs/PRD.md` bagian 10) didefinisikan di `backend/prisma/schema.prisma` dan divisikan lewat *migration files* di `backend/prisma/migrations/`. Jalur `docker compose up` (baik `dev` maupun `production` target) otomatis menjalankan `prisma migrate deploy` sebelum server start, sehingga schema lokal selalu sinkron.
+
+Untuk menambah/mengubah tabel:
+1. Ubah `backend/prisma/schema.prisma`.
+2. Pastikan database jalan (`docker compose up -d db`), lalu dari folder `backend/` jalankan `npm run db:migrate -- --name nama_perubahan`.
+3. Commit file migration baru yang muncul di `backend/prisma/migrations/`.
 
 ### Endpoint
 

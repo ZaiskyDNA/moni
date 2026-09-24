@@ -1,6 +1,7 @@
 import { createApp } from './app.js';
 import { config } from './config.js';
 import { createDb } from './db.js';
+import { prisma } from './prisma.js';
 
 const db = createDb(config.databaseUrl);
 const app = createApp({ db, corsOrigin: config.corsOrigin });
@@ -14,7 +15,7 @@ const server = app.listen(config.port, () => {
 function shutdown(signal) {
   console.log(`${signal} diterima, menutup server...`);
   server.close(async () => {
-    await db.end();
+    await Promise.all([db.end(), prisma.$disconnect()]);
     process.exit(0);
   });
   setTimeout(() => process.exit(1), 10_000).unref();
