@@ -1,0 +1,196 @@
+// Skema database MONI, mengikuti ERD pada docs/PRD.md bagian 10.
+// Nama model/field ditulis dalam bahasa Inggris (konvensi kode), nama tabel/kolom
+// di database tetap snake_case lewat @@map/@map agar mudah dibaca lewat SQL biasa.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum GoalStatus {
+  ACTIVE
+  ACHIEVED
+  CANCELLED
+
+  @@map("goal_status")
+}
+
+enum CategoryType {
+  ESSENTIAL
+  NON_ESSENTIAL
+
+  @@map("category_type")
+}
+
+enum CsvUploadStatus {
+  PROCESSING
+  COMPLETED
+  FAILED
+
+  @@map("csv_upload_status")
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+
+  @@map("transaction_type")
+}
+
+enum TransactionSource {
+  MANUAL
+  CSV
+
+  @@map("transaction_source")
+}
+
+enum SavingCalculationStatus {
+  ON_TRACK
+  AT_RISK
+  DEFICIT
+
+  @@map("saving_calculation_status")
+}
+
+model User {
+  id           String   @id @default(uuid())
+  name         String
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  goals       Goal[]
+  transactions Transaction[]
+  csvUploads  CsvUpload[]
+
+  @@map("users")
+}
+
+model Goal {
+  id                 String     @id @default(uuid())
+  userId             String     @map("user_id")
+  destinationCountry String?    @map("destination_country")
+  targetCurrency     String     @map("target_currency")
+  targetDate         DateTime   @map("target_date") @db.Date
+  targetAmount       Decimal    @map("target_amount") @db.Decimal(14, 2)
+  status             GoalStatus @default(ACTIVE)
+  createdAt          DateTime   @default(now()) @map("created_at")
+  updatedAt          DateTime   @updatedAt @map("updated_at")
+
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  savingCalculations SavingCalculation[]
+  alerts             Alert[]
+
+  @@index([userId])
+  @@map("goals")
+}
+
+model Category {
+  id   String       @id @default(uuid())
+  name String       @unique
+  type CategoryType
+
+  transactions           Transaction[]
+  budgetRecommendations  BudgetRecommendation[]
+
+  @@map("categories")
+}
+
+model CsvUpload {
+  id         String           @id @default(uuid())
+  userId     String           @map("user_id")
+  fileName   String           @map("file_name")
+  uploadedAt DateTime         @default(now()) @map("uploaded_at")
+  status     CsvUploadStatus  @default(PROCESSING)
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@index([userId])
+  @@map("csv_uploads")
+}
+
+model Transaction {
+  id          String            @id @default(uuid())
+  userId      String            @map("user_id")
+  categoryId  String?           @map("category_id")
+  csvUploadId String?           @map("csv_upload_id")
+  date        DateTime          @db.Date
+  amount      Decimal           @db.Decimal(14, 2)
+  type        TransactionType
+  description String?
+  source      TransactionSource
+  createdAt   DateTime          @default(now()) @map("created_at")
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category  Category?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  csvUpload CsvUpload? @relation(fields: [csvUploadId], references: [id], onDelete: SetNull)
+
+  @@index([userId, date])
+  @@map("transactions")
+}
+
+model ExchangeRate {
+  id             String   @id @default(uuid())
+  baseCurrency   String   @map("base_currency")
+  targetCurrency String   @map("target_currency")
+  rate           Decimal  @db.Decimal(18, 6)
+  date           DateTime @db.Date
+  source         String
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  savingCalculations SavingCalculation[]
+
+  @@unique([baseCurrency, targetCurrency, date])
+  @@map("exchange_rates")
+}
+
+model SavingCalculation {
+  id             String                   @id @default(uuid())
+  goalId         String                   @map("goal_id")
+  rateId         String                   @map("rate_id")
+  date           DateTime                 @db.Date
+  dailyTarget    Decimal                  @map("daily_target") @db.Decimal(14, 2)
+  predictedRate  Decimal                  @map("predicted_rate") @db.Decimal(18, 6)
+  status         SavingCalculationStatus  @default(ON_TRACK)
+  createdAt      DateTime                 @default(now()) @map("created_at")
+
+  goal Goal         @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  rate ExchangeRate @relation(fields: [rateId], references: [id], onDelete: Restrict)
+
+  @@index([goalId, date])
+  @@map("saving_calculations")
+}
+
+model Alert {
+  id       String   @id @default(uuid())
+  goalId   String   @map("goal_id")
+  // Bebas (bukan enum): jenis alert bisa terus bertambah, termasuk yang dihasilkan LLM (lihat ML_Architecture.md).
+  type     String
+  message  String
+  date     DateTime @default(now())
+  isRead   Boolean  @default(false) @map("is_read")
+
+  goal                  Goal                    @relation(fields: [goalId], references: [id], onDelete: Cascade)
+  budgetRecommendations BudgetRecommendation[]
+
+  @@index([goalId])
+  @@map("alerts")
+}
+
+model BudgetRecommendation {
+  id         String  @id @default(uuid())
+  alertId    String  @map("alert_id")
+  categoryId String  @map("category_id")
+  cutAmount  Decimal @map("cut_amount") @db.Decimal(14, 2)
+
+  alert    Alert    @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+
+  @@index([alertId])
+  @@map("budget_recommendations")
+}
