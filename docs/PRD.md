@@ -190,7 +190,7 @@ Dashboard utama (*Dashboard Sinking Fund*) menampilkan, dari atas ke bawah: (1) 
 ## 15. Deployment & Environment Guide
 - **Environment:** `local` (development), `staging` (hasil merge ke `dev`, untuk internal testing), `production` (hasil merge ke `main`, untuk demo/UAT/publik).
 - **Alur Deploy:** Build artifact dari GitHub Actions (Bagian 8.5) digunakan sebagai dasar deploy; frontend di-deploy ke Vercel (auto-deploy dari branch), backend & database di-deploy ke Railway/Render dengan migration dijalankan otomatis (`prisma migrate deploy`) sebelum service backend restart.
-- **Environment Variables minimum yang dibutuhkan:** `DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `EXCHANGE_RATE_API_KEY`, `EXCHANGE_RATE_API_BASE_URL`, `CRON_SCHEDULE`, `EMAIL_API_KEY` (untuk notifikasi, jika digunakan).
+- **Environment Variables minimum yang dibutuhkan:** `DATABASE_URL`, `JWT_SECRET`, `JWT_REFRESH_SECRET`, `EXCHANGE_RATE_API_BASE_URL`, `EXCHANGE_RATE_CRON_SCHEDULE`, `INTERNAL_CRON_SECRET`, `EMAIL_API_KEY` (untuk notifikasi, jika digunakan). *(Update 2026-09-24: `EXCHANGE_RATE_API_KEY` dihapus dari daftar — API kurs terpilih, Frankfurter, tidak butuh API key sama sekali; lihat `docs/Exchange_Rate_API_Comparison.md`. `CRON_SCHEDULE` diganti nama jadi `EXCHANGE_RATE_CRON_SCHEDULE` agar tidak ambigu dengan cron job lain di masa depan, mis. retraining model mingguan.)*
 - **Observability minimum:** Logging terstruktur pada backend (khususnya untuk job cron kurs & modul kalkulasi) serta health-check endpoint (`/health`) agar status service mudah dipantau di hosting.
 
 ## 16. Roadmap & Fase Pengembangan
