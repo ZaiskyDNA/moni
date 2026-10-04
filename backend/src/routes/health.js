@@ -1,13 +1,15 @@
 import { Router } from 'express';
 
-export function createHealthRouter({ db }) {
+export function createHealthRouter({ db, commitSha }) {
   const router = Router();
 
   // Liveness: apakah proses masih hidup? Sengaja tidak menyentuh database,
   // supaya container tidak di-restart hanya karena database sedang lambat.
+  // `commit` dipakai workflow deploy untuk memastikan versi baru yang sedang live.
   router.get('/', (req, res) => {
     res.json({
       status: 'ok',
+      commit: commitSha ?? null,
       uptime: Math.round(process.uptime()),
       timestamp: new Date().toISOString(),
     });

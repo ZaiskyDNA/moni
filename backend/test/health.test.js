@@ -18,6 +18,12 @@ describe('GET /api/v1/health', () => {
     assert.equal(res.status, 200);
     assert.equal(res.body.status, 'ok');
   });
+
+  test('menampilkan commit yang sedang berjalan (dipakai smoke test deploy)', async () => {
+    const res = await request(createApp({ db: healthyDb, config: { commitSha: 'abc123' } })).get('/api/v1/health');
+
+    assert.equal(res.body.commit, 'abc123');
+  });
 });
 
 describe('GET /api/v1/health/ready', () => {

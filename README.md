@@ -115,3 +115,10 @@ Workflow GitHub Actions (`.github/workflows/ci.yml`) berjalan pada setiap push d
 
 1. **Lint & Test**: `npm ci`, `npm run lint`, dan `npm test` di folder `backend/`.
 2. **Docker Smoke Test** (hanya jalan kalau job pertama lulus): build image target `production`, menjalankannya bersama PostgreSQL, lalu memanggil `/api/v1/health` dan `/api/v1/health/ready`.
+
+## Deployment (Staging)
+
+Backend + PostgreSQL staging berjalan di Railway. Setiap push ke `dev` yang lolos CI otomatis di-deploy oleh `.github/workflows/deploy-staging.yml`, lalu di-smoke test dari CI.
+
+- URL staging: `https://<STAGING_URL>/api/v1` (diisi setelah environment Railway dibuat — lihat variable `STAGING_URL` di GitHub environment `staging`).
+- Setup awal, environment variables, arsitektur, dan **cara rollback**: [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md).

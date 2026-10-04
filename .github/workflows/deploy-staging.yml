@@ -1,0 +1,95 @@
+name: Deploy Staging
+
+# Deploy ke Railway (environment `staging`) hanya setelah workflow CI hijau untuk push ke `dev`.
+# Bisa juga dijalankan manual dari tab Actions untuk redeploy / rollback ke commit tertentu.
+# Setup awal (secret, variable, service Railway) dijelaskan di docs/DEPLOYMENT.md.
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [dev]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Jangan pernah menjalankan dua deploy staging bersamaan; deploy baru menunggu yang lama selesai.
+concurrency:
+  group: deploy-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy ke Railway (staging)
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+      url: ${{ vars.STAGING_URL }}
+    env:
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      RAILWAY_SERVICE: ${{ vars.RAILWAY_SERVICE || 'backend' }}
+      STAGING_URL: ${{ vars.STAGING_URL }}
+      # Commit yang lolos CI (workflow_run), atau commit yang dipilih saat dijalankan manual.
+      COMMIT_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+    steps:
+      - name: Cek konfigurasi
+        run: |
+          if [ -z "$RAILWAY_TOKEN" ] || [ -z "$STAGING_URL" ]; then
+            echo "::error::Secret RAILWAY_TOKEN dan variable STAGING_URL wajib diset di environment 'staging' (lihat docs/DEPLOYMENT.md)."
+            exit 1
+          fi
+
+      - name: Checkout commit yang lolos CI
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.COMMIT_SHA }}
+
+      - name: Install Railway CLI
+        run: npm install --global @railway/cli
+
+      # Ditampilkan oleh GET /api/v1/health, supaya smoke test bisa memastikan versi baru yang live.
+      # --skip-deploys: jangan memicu redeploy versi lama hanya karena variable berubah.
+      - name: Tandai versi deployment
+        run: >-
+          railway variable set "GIT_COMMIT_SHA=$COMMIT_SHA"
+          --service "$RAILWAY_SERVICE" --environment staging --skip-deploys
+
+      # Railway mem-build backend/Dockerfile (stage terakhir = production). Container menjalankan
+      # `prisma migrate deploy` sebelum server start, dan Railway baru mengalihkan traffic setelah
+      # /api/v1/health/ready lolos (backend/railway.json); kalau gagal, deployment lama tetap live.
+      - name: Build & deploy
+        run: >-
+          railway up backend --path-as-root --ci
+          --service "$RAILWAY_SERVICE" --environment staging
+          --message "${COMMIT_SHA::7} via GitHub Actions run ${{ github.run_id }}"
+
+      - name: Smoke test staging
+        run: |
+          api="${STAGING_URL%/}/api/v1"
+
+          # Tunggu sampai deployment baru benar-benar menerima traffic (maks. ~6 menit).
+          for attempt in $(seq 1 36); do
+            live=$(curl --silent --max-time 10 "$api/health" | jq -r '.commit // empty' 2>/dev/null || true)
+            [ "$live" = "$COMMIT_SHA" ] && break
+            echo "Percobaan $attempt: commit live '${live:-?}', menunggu $COMMIT_SHA..."
+            sleep 10
+          done
+
+          if [ "$live" != "$COMMIT_SHA" ]; then
+            echo "::error::Deployment baru tidak live (health check gagal atau migrasi error). Cek log di dashboard Railway."
+            exit 1
+          fi
+
+          curl --fail --silent --show-error "$api/health/ready"
+          echo
+
+          # Route terproteksi harus hidup dan menolak request tanpa token.
+          status=$(curl --silent --output /dev/null --write-out '%{http_code}' "$api/goals")
+          if [ "$status" != "401" ]; then
+            echo "::error::GET /goals tanpa token seharusnya 401, didapat $status."
+            exit 1
+          fi
+          echo "Staging sehat di $STAGING_URL (commit $COMMIT_SHA)"
