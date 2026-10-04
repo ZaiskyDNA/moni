@@ -104,6 +104,14 @@ Untuk menambah/mengubah tabel:
 
 Penarikan kurs juga berjalan otomatis lewat *background worker* (`node-cron`, lihat `backend/src/cron.js`) sesuai jadwal `EXCHANGE_RATE_CRON_SCHEDULE` selama proses backend hidup — endpoint di atas untuk trigger manual/testing.
 
+## Forecasting Service (ML)
+
+Microservice Python/FastAPI untuk prediksi tren kurs (FR-06), terpisah dari backend Node supaya dependency berat (pandas, numpy, scikit-learn) tidak membebani image backend. Detail lengkap (model baseline, endpoint, cara jalan lokal/Docker) ada di [`ml-service/README.md`](ml-service/README.md).
+
+```bash
+docker compose up --build ml-service   # http://localhost:8000/health
+```
+
 ## CI
 
 Workflow GitHub Actions (`.github/workflows/ci.yml`) berjalan pada setiap push dan pull request ke `main`/`dev`, dan bisa dijalankan manual dari tab **Actions**:
