@@ -42,6 +42,34 @@ services:
         - action: rebuild
           path: ./backend/package-lock.json
 
+  ml-service:
+    build:
+      context: ./ml-service
+      # `dev` untuk development (default, auto-reload). CI memakai ML_SERVICE_TARGET=production.
+      target: ${ML_SERVICE_TARGET:-dev}
+    environment:
+      PORT: 8000
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+    ports:
+      - "${ML_SERVICE_PORT:-8000}:8000"
+    init: true
+    healthcheck:
+      # python:3.12-slim tidak punya wget/curl bawaan, jadi pakai urllib.
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    develop:
+      watch:
+        - action: sync
+          path: ./ml-service/app
+          target: /app/app
+        - action: rebuild
+          path: ./ml-service/requirements.txt
+        - action: rebuild
+          path: ./ml-service/requirements-dev.txt
+
   db:
     image: postgres:17-alpine
     environment:
