@@ -83,6 +83,7 @@ Jalankan dari folder `backend/`.
 | `npm run db:migrate` | Membuat & menerapkan migration baru dari `prisma/schema.prisma` (development) |
 | `npm run db:deploy` | Menerapkan migration yang sudah ada tanpa membuat yang baru (dipakai saat deploy) |
 | `npm run db:studio` | Membuka Prisma Studio (GUI) untuk lihat/edit data |
+| `npm run db:backfill-rates` | Isi histori kurs dari Frankfurter ke tabel `exchange_rates` (data training awal model FR-06) |
 
 ### Database schema (Prisma)
 
@@ -103,6 +104,17 @@ Untuk menambah/mengubah tabel:
 | POST | `/api/v1/internal/cron/fetch-exchange-rate` | Trigger manual penarikan kurs dari Frankfurter (dipakai scheduler, bukan user — butuh header `x-internal-cron-secret` kalau `INTERNAL_CRON_SECRET` diset) |
 
 Penarikan kurs juga berjalan otomatis lewat *background worker* (`node-cron`, lihat `backend/src/cron.js`) sesuai jadwal `EXCHANGE_RATE_CRON_SCHEDULE` selama proses backend hidup — endpoint di atas untuk trigger manual/testing.
+
+### Backfill data historis kurs
+
+Cron harian hanya mengisi 1 baris per hari sejak pertama kali dijalankan — tidak cukup untuk melatih/mengevaluasi model regresi (FR-06). Jalankan sekali (dari folder `backend/`, database harus sudah migrated):
+
+```bash
+npm run db:backfill-rates                                   # default: 2 tahun terakhir s.d. hari ini
+npm run db:backfill-rates -- --from=2023-01-01 --to=2024-12-31  # rentang custom
+```
+
+Aman dijalankan berkali-kali (idempotent, upsert per tanggal) — termasuk kalau rentangnya tumpang tindih dengan data yang sudah ada. IDR hanya tersedia di Frankfurter sejak ~1999-01-04 (lihat `docs/Exchange_Rate_API_Comparison.md`); rentang lebih jauh dari itu akan gagal dengan error dari API.
 
 ## Forecasting Service (ML)
 
