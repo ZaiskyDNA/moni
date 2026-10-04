@@ -77,6 +77,22 @@ describe('POST /api/v1/auth/login', () => {
     assert.match(cookie, /SameSite=Lax/);
   });
 
+  test('cookie SameSite=None + Secure untuk frontend beda domain (staging/production)', async () => {
+    const app = createApp({
+      db: healthyDb,
+      prisma: fakeUserPrisma(),
+      config: { env: 'production', auth: { ...testAuthConfig, cookieSameSite: 'none' } },
+    });
+    await request(app).post('/api/v1/auth/register').send(validUser);
+    const res = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: validUser.email, password: validUser.password });
+
+    const cookie = res.headers['set-cookie'].join(';');
+    assert.match(cookie, /SameSite=None/);
+    assert.match(cookie, /Secure/);
+  });
+
   test('password salah dan email tidak terdaftar sama-sama dibalas 401 yang sama', async () => {
     const app = buildApp();
     await request(app).post('/api/v1/auth/register').send(validUser);

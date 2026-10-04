@@ -10,6 +10,8 @@ export const config = {
   corsOrigin: process.env.CORS_ORIGIN ?? '*',
   // Jumlah reverse proxy di depan backend (0 di lokal, biasanya 1 di hosting cloud).
   trustProxy: Number(process.env.TRUST_PROXY || 0),
+  // Diisi workflow deploy (lihat docs/DEPLOYMENT.md), ditampilkan di GET /health.
+  commitSha: process.env.GIT_COMMIT_SHA || undefined,
 
   // FR-01. Pakai `||` dengan alasan yang sama seperti blok exchangeRate di bawah.
   auth: {
@@ -18,6 +20,9 @@ export const config = {
     // Dalam detik. Default: access 15 menit, refresh 7 hari.
     accessTokenTtl: Number(process.env.ACCESS_TOKEN_TTL || 900),
     refreshTokenTtl: Number(process.env.REFRESH_TOKEN_TTL || 604_800),
+    // SameSite cookie refresh token. `none` wajib kalau frontend & backend beda site
+    // (mis. *.vercel.app ↔ *.up.railway.app), dan hanya berlaku dengan cookie `secure` (production).
+    cookieSameSite: process.env.AUTH_COOKIE_SAMESITE || 'lax',
     // Maksimal percobaan register/login per IP per 15 menit.
     rateLimit: { windowMs: 15 * 60 * 1000, max: Number(process.env.AUTH_RATE_LIMIT_MAX || 10) },
   },

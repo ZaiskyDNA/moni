@@ -28,7 +28,7 @@ export function createAuthRouter({ prisma, config }) {
   const cookieOptions = {
     httpOnly: true,
     secure: config.env === 'production',
-    sameSite: 'lax',
+    sameSite: config.auth.cookieSameSite ?? 'lax',
     path: '/api/v1/auth',
   };
 
