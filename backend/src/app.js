@@ -6,6 +6,7 @@ import { config as defaultConfig } from './config.js';
 import { HttpError } from './lib/errors.js';
 import { createHealthRouter } from './routes/health.js';
 import { createAuthRouter } from './routes/auth.js';
+import { createGoalRouter } from './routes/goals.js';
 import { createExchangeRateRouter } from './routes/exchangeRates.js';
 import { createCronRouter } from './routes/cron.js';
 
@@ -25,6 +26,7 @@ export function createApp({ db, prisma, config, corsOrigin = '*' }) {
 
   app.use('/api/v1/health', createHealthRouter({ db }));
   app.use('/api/v1/auth', createAuthRouter({ prisma, config: appConfig }));
+  app.use('/api/v1/goals', createGoalRouter({ prisma, config: appConfig }));
   app.use('/api/v1/exchange-rates', createExchangeRateRouter({ prisma }));
   app.use('/api/v1/internal/cron', createCronRouter({ prisma, config: appConfig }));
 

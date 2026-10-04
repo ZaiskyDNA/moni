@@ -34,3 +34,38 @@ export function fakeUserPrisma() {
     },
   };
 }
+
+// Prisma palsu untuk tabel goals, hanya mendukung query yang dipakai goalService.
+export function fakeGoalPrisma() {
+  const goals = [];
+
+  const matchesStatus = (goal, status) =>
+    status === undefined || (typeof status === 'string' ? goal.status === status : goal.status !== status.not);
+
+  return {
+    goals,
+    goal: {
+      async create({ data }) {
+        const now = new Date();
+        const goal = { id: `goal-${goals.length + 1}`, destinationCountry: null, status: 'ACTIVE', createdAt: now, updatedAt: now, ...data };
+        goals.push(goal);
+        return { ...goal };
+      },
+      async findFirst({ where }) {
+        const goal = goals.find((g) => g.id === where.id && g.userId === where.userId);
+        return goal ? { ...goal } : null;
+      },
+      async findMany({ where }) {
+        return goals
+          .filter((g) => g.userId === where.userId && matchesStatus(g, where.status))
+          .sort((a, b) => a.targetDate - b.targetDate)
+          .map((g) => ({ ...g }));
+      },
+      async update({ where, data }) {
+        const goal = goals.find((g) => g.id === where.id);
+        Object.assign(goal, data, { updatedAt: new Date() });
+        return { ...goal };
+      },
+    },
+  };
+}

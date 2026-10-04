@@ -1,3 +1,5 @@
+import { SUPPORTED_CURRENCIES } from './lib/currencies.js';
+
 // Semua konfigurasi dibaca dari environment variable, sehingga nilai lokal, CI,
 // dan Azure cukup dibedakan lewat .env / App Settings tanpa mengubah kode.
 export const config = {
@@ -27,10 +29,9 @@ export const config = {
     // Frankfurter tidak butuh API key (lihat docs/Exchange_Rate_API_Comparison.md).
     apiBaseUrl: process.env.EXCHANGE_RATE_API_BASE_URL || 'https://api.frankfurter.dev/v1',
     baseCurrency: process.env.EXCHANGE_RATE_BASE_CURRENCY || 'IDR',
-    // Mata uang tujuan yang dipantau. Sementara statis lewat env var karena FR-02
-    // (Kelola Target Keberangkatan) belum ada; ke depannya bisa diturunkan dari
-    // GOAL.targetCurrency yang sedang aktif.
-    trackedCurrencies: (process.env.EXCHANGE_RATE_TRACKED_CURRENCIES || 'USD,AUD,EUR,GBP,JPY,SGD')
+    // Mata uang tujuan yang dipantau. Default-nya sama dengan mata uang yang boleh dipilih
+    // di goal (src/lib/currencies.js); minggu 8 akan diturunkan dari GOAL.targetCurrency aktif.
+    trackedCurrencies: (process.env.EXCHANGE_RATE_TRACKED_CURRENCIES || SUPPORTED_CURRENCIES.join(','))
       .split(',')
       .map((code) => code.trim().toUpperCase())
       .filter(Boolean),

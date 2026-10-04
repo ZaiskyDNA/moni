@@ -95,10 +95,15 @@ Untuk menambah/mengubah tabel:
 
 ### Endpoint
 
+Kontrak lengkap (body, response, kode error) ada di [`docs/API.md`](docs/API.md). Ringkasan:
+
 | Method | Path | Keterangan |
 |---|---|---|
 | GET | `/api/v1/health` | Liveness: server hidup |
 | GET | `/api/v1/health/ready` | Readiness: server bisa terhubung ke database (503 kalau tidak) |
+| POST | `/api/v1/auth/register`, `/login`, `/refresh`, `/logout` · GET `/me` | Registrasi & sesi (FR-01) |
+| POST, GET | `/api/v1/goals` | Buat / daftar target keberangkatan (FR-02, butuh login) |
+| GET, PUT, DELETE | `/api/v1/goals/:id` | Detail / ubah / batalkan target (soft-delete) |
 | GET | `/api/v1/exchange-rates/latest` | Kurs terbaru per pasangan mata uang yang sudah ditarik cron job |
 | POST | `/api/v1/internal/cron/fetch-exchange-rate` | Trigger manual penarikan kurs dari Frankfurter (dipakai scheduler, bukan user — butuh header `x-internal-cron-secret` kalau `INTERNAL_CRON_SECRET` diset) |
 
