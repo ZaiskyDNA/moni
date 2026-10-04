@@ -40,3 +40,15 @@ export async function fetchLatestRates({ apiBaseUrl, baseCurrency, targetCurrenc
 
   return fetchWithRetry(url.toString());
 }
+
+// Mengambil kurs historis untuk satu rentang tanggal (dipakai backfill, bukan cron harian).
+// Bentuk respons: { amount, base, start_date, end_date, rates: { "2024-01-01": { AUD: ... }, ... } }
+// Frankfurter melewati hari tanpa data (libur bursa/weekend), jadi tidak semua tanggal di
+// rentang akan muncul sebagai key — ini sesuai ekspektasi, bukan bug.
+export async function fetchHistoricalRates({ apiBaseUrl, baseCurrency, targetCurrencies, startDate, endDate }) {
+  const url = new URL(`${apiBaseUrl.replace(/\/+$/, '')}/${startDate}..${endDate}`);
+  url.searchParams.set('base', baseCurrency);
+  url.searchParams.set('symbols', targetCurrencies.join(','));
+
+  return fetchWithRetry(url.toString());
+}

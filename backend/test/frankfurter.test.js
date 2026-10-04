@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { afterEach, describe, test } from 'node:test';
-import { fetchLatestRates } from '../src/services/frankfurter.js';
+import { fetchHistoricalRates, fetchLatestRates } from '../src/services/frankfurter.js';
 
 const originalFetch = global.fetch;
 
@@ -63,5 +63,35 @@ describe('fetchLatestRates', () => {
 
     assert.equal(attempts, 2);
     assert.equal(result.rates.AUD, 0.00008);
+  });
+});
+
+describe('fetchHistoricalRates', () => {
+  test('memanggil endpoint rentang tanggal dengan base & symbols yang benar', async () => {
+    let calledUrl;
+    global.fetch = async (url) => {
+      calledUrl = url;
+      return {
+        ok: true,
+        json: async () => ({
+          amount: 1,
+          base: 'IDR',
+          start_date: '2026-01-01',
+          end_date: '2026-01-02',
+          rates: { '2026-01-01': { AUD: 0.00008 }, '2026-01-02': { AUD: 0.000081 } },
+        }),
+      };
+    };
+
+    const result = await fetchHistoricalRates({
+      apiBaseUrl: 'https://api.frankfurter.dev/v1',
+      baseCurrency: 'IDR',
+      targetCurrencies: ['AUD'],
+      startDate: '2026-01-01',
+      endDate: '2026-01-02',
+    });
+
+    assert.equal(calledUrl, 'https://api.frankfurter.dev/v1/2026-01-01..2026-01-02?base=IDR&symbols=AUD');
+    assert.equal(Object.keys(result.rates).length, 2);
   });
 });
