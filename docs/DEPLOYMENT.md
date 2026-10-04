@@ -53,9 +53,8 @@ Kalau deployment baru gagal health check (mis. migrasi error), Railway tetap men
    | `TRUST_PROXY` | `1` (rate limit butuh IP asli dari proxy Railway) |
    | `INTERNAL_CRON_SECRET` | acak 32 byte |
    | `TZ` | `Asia/Jakarta` |
-
-   `PORT` tidak perlu diisi: Railway menyediakannya otomatis dan backend membacanya.
-5. Service `backend` → **Settings → Networking → Generate Domain**. Catat URL-nya (mis. `https://moni-backend-staging.up.railway.app`).
+   | `PORT` | `3000` (disamakan dengan target port domain di langkah 5) |
+5. Service `backend` → **Settings → Networking → Generate Domain** dengan target port `3000`. Catat URL-nya (mis. `https://moni-backend-staging.up.railway.app`).
 6. **Project Settings → Tokens → Create token** untuk environment `staging`. Ini *project token* yang hanya bisa mengakses environment tersebut.
 
 ### 3.2 GitHub
@@ -65,9 +64,12 @@ Repo → **Settings → Environments → New environment `staging`**, lalu isi:
 - **Environment secret** `RAILWAY_TOKEN` = project token dari langkah 3.1.6.
 - **Environment variable** `STAGING_URL` = domain dari langkah 3.1.5 (tanpa `/` di akhir).
 - (opsional) **Environment variable** `RAILWAY_SERVICE` kalau nama service bukan `backend`.
-- Deployment branches: batasi ke `dev`.
+- Deployment branches: **jangan** dibatasi ke `dev` saja. Event `workflow_run` berjalan dalam konteks branch default (`main`), jadi pembatasan ke `dev` akan memblokir deploy otomatis. Pilih "No restriction", atau izinkan `main` dan `dev`.
 
-Pastikan branch `dev` sudah ada di GitHub, karena deploy otomatis hanya terpicu dari CI hijau pada push ke `dev`.
+Dua syarat dari GitHub:
+
+- `.github/workflows/deploy-staging.yml` harus sudah ada di branch default (`main`). Kalau belum, `workflow_run` tidak pernah terpicu dan tombol "Run workflow" tidak muncul.
+- Branch `dev` harus ada, karena deploy otomatis hanya terpicu dari CI hijau pada push ke `dev`.
 
 ### 3.3 Deploy pertama
 
