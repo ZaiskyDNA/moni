@@ -25,7 +25,7 @@ export function createApp({ db, prisma, config, corsOrigin = '*' }) {
 
   app.use('/api/v1/health', createHealthRouter({ db }));
   app.use('/api/v1/auth', createAuthRouter({ prisma, config: appConfig }));
-  app.use('/api/v1/exchange-rates', createExchangeRateRouter({ prisma }));
+  app.use('/api/v1/exchange-rates', createExchangeRateRouter({ prisma, config: appConfig }));
   app.use('/api/v1/internal/cron', createCronRouter({ prisma, config: appConfig }));
 
   app.use((req, res) => {
