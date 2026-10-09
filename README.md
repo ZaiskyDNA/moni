@@ -101,6 +101,7 @@ Untuk menambah/mengubah tabel:
 | GET | `/api/v1/health` | Liveness: server hidup |
 | GET | `/api/v1/health/ready` | Readiness: server bisa terhubung ke database (503 kalau tidak) |
 | GET | `/api/v1/exchange-rates/latest` | Kurs terbaru per pasangan mata uang yang sudah ditarik cron job |
+| GET | `/api/v1/exchange-rates/forecast` | Prediksi tren kurs (FR-06) — proxy ke `ml-service`. Butuh login (JWT). Query: `target` (wajib, mis. `AUD`), `horizon`, `model` (`linear_regression`/`moving_average`), `window` |
 | POST | `/api/v1/internal/cron/fetch-exchange-rate` | Trigger manual penarikan kurs dari Frankfurter (dipakai scheduler, bukan user — butuh header `x-internal-cron-secret` kalau `INTERNAL_CRON_SECRET` diset) |
 
 Penarikan kurs juga berjalan otomatis lewat *background worker* (`node-cron`, lihat `backend/src/cron.js`) sesuai jadwal `EXCHANGE_RATE_CRON_SCHEDULE` selama proses backend hidup — endpoint di atas untuk trigger manual/testing.
