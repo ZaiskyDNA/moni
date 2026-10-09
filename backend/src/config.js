@@ -42,4 +42,13 @@ export const config = {
     // variabel docker-compose yang kosong.
     internalCronSecret: process.env.INTERNAL_CRON_SECRET || undefined,
   },
+
+  // FR-06: proxy ke ml-service (lihat ml-service/README.md). `ml-service` adalah nama
+  // service di docker-compose.yml, jadi itu default yang jalan di dalam container tanpa
+  // konfigurasi tambahan; untuk dev tanpa Docker, override ke http://localhost:8000.
+  forecast: {
+    serviceUrl: process.env.FORECAST_SERVICE_URL || 'http://ml-service:8000',
+    // Berapa hari histori yang dikirim ke ml-service per permintaan forecast.
+    historyDays: Number(process.env.FORECAST_HISTORY_DAYS || 180),
+  },
 };
